@@ -1,0 +1,38 @@
+# ============================================
+# ArtisanConnect Nigeria — .gitignore
+# ============================================
+ 
+# ENVIRONMENT VARIABLES — NEVER PUSH THESE
+.env
+.env.local
+.env.production
+ 
+# PYTHON
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+pip-log.txt
+ 
+# VS CODE
+.vscode/
+*.code-workspace
+ 
+# MACOS SYSTEM FILES
+.DS_Store
+.AppleDouble
+.LSOverride
+ 
+# FLUTTER (for when you build the app in Week 13)
+frontend/build/
+frontend/.dart_tool/
+frontend/.packages
+frontend/pubspec.lock
+ 
+# LOGS
+*.log
+logs/
