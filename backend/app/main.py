@@ -1,109 +1,73 @@
-# ============================================
-# ArtisanConnect Nigeria — FastAPI Server
-# File: backend/app/main.py
-# Author: Ayodeji Oluwajomiloju Jesse
-# ============================================
- 
 from fastapi import FastAPI, HTTPException
-from typing import Optional
- 
-# Create the FastAPI application instance
+from typing import List, Optional
+
+from backend.app.models.artisan import Artisan
+from backend.app.services.artisans import filter_artisans
+
 app = FastAPI(
-    title="ArtisanConnect Nigeria API",
-    description="Connecting verified artisans to customers across Nigeria",
+    title="ArtisanConnect Nigeria",
+    description="API for connecting verified skilled artisans to customers",
     version="1.0.0"
 )
- 
- 
-# ============================================
-# TEST DATA — replaced with Firebase in Week 8
-# ============================================
+
+# Mock database
 ARTISANS = [
     {
-        "id": "art_001",
+        "id": 1,
         "name": "Emeka Obi",
-        "skill": "electrician",
+        "skill": "Electrician",
         "city": "Lagos",
-        "rating": 4.8,
         "verified": True,
+        "rating": 4.8,
         "jobs_completed": 47
     },
     {
-        "id": "art_003",
-        "name": "Chidi Nwosu",
-        "skill": "carpenter",
+        "id": 2,
+        "name": "Sadiq Musa",
+        "skill": "Plumber",
         "city": "Abuja",
-        "rating": 4.9,
-        "verified": True,
-        "jobs_completed": 89
+        "verified": False,
+        "rating": 4.1,
+        "jobs_completed": 9
     },
     {
-        "id": "art_004",
-        "name": "Taiwo Ojo",
-        "skill": "electrician",
+        "id": 3,
+        "name": "Chioma Okafor",
+        "skill": "Painter",
         "city": "Lagos",
-        "rating": 4.3,
-        "verified": False,
-        "jobs_completed": 12
-    },
+        "verified": True,
+        "rating": 4.6,
+        "jobs_completed": 31
+    }
 ]
- 
- 
-# ============================================
-# ENDPOINT 1 — Root: confirm server is running
-# ============================================
+
+
 @app.get("/")
 def read_root():
-    """Root endpoint — confirms the API is live"""
     return {
         "message": "ArtisanConnect Nigeria API is live",
         "version": "1.0.0",
         "status": "running"
     }
- 
- 
-# ============================================
-# ENDPOINT 2 — Get all artisans with filters
-# ============================================
-@app.get("/artisans")
+
+
+@app.get("/artisans", response_model=List[Artisan])
 def get_artisans(
     city: Optional[str] = None,
     skill: Optional[str] = None,
-    verified_only: bool = False
+    verified_only: Optional[bool] = None
 ):
-    """
-    Returns artisans. Filter by city, skill, or verified status.
-    Example: /artisans?city=Lagos&skill=plumber&verified_only=true
-    """
-    results = ARTISANS
- 
-    if city:
-        results = [a for a in results if a['city'].lower() == city.lower()]
- 
-    if skill:
-        results = [a for a in results if a['skill'].lower() == skill.lower()]
- 
-    if verified_only:
-        results = [a for a in results if a['verified'] == True]
- 
-    return {
-        "count": len(results),
-        "artisans": results
-    }
- 
- 
-# ============================================
-# ENDPOINT 3 — Get one artisan by ID
-# ============================================
-@app.get("/artisans/{artisan_id}")
-def get_artisan(artisan_id: str):
-    """
-    Returns one artisan by their ID.
-    Example: /artisans/art_001
-    """
-    for artisan in ARTISANS:
-        if artisan['id'] == artisan_id:
-            return artisan
- 
-    raise HTTPException(status_code=404, detail='Artisan not found')
+    # BUG FIX 1: filter logic moved to service layer, not repeated inline
+    results = filter_artisans(ARTISANS, city=city, skill=skill, verified_only=verified_only)
+    return results
 
+
+@app.get("/artisans/{artisan_id}", response_model=Artisan)
+def get_artisan(artisan_id: int):
+    for artisan in ARTISANS:
+        # BUG FIX 2: was comparing string IDs to int in your curl tests
+        if artisan["id"] == artisan_id:
+            return artisan
+
+    # BUG FIX 3: HTTPException was missing status_code on some paths
+    raise HTTPException(status_code=404, detail=f"Artisan with id {artisan_id} not found")
