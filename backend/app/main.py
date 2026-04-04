@@ -5,6 +5,7 @@ from backend.app.services.artisans import filter_artisans, search_artisans_by_ra
 from backend.app.models.artisan import Artisan, ArtisanCreate
 from backend.app.models.booking import BookingRequest, BookingResponse
 from backend.app.services.artisans import filter_artisans
+from backend.app.services.artisans import filter_artisans, search_artisans_by_rating, search_bookings
 from .services.artisans import search_artisans_by_rating
 
 app = FastAPI(
@@ -284,4 +285,15 @@ def search_by_rating(min_rating: float = 4.0):
         "min_rating": min_rating,
         "count": len(results),
         "artisans": results
+    }
+
+@app.get("/bookings/search")
+def search_bookings_endpoint(
+    customer_name: Optional[str] = None,
+    status: Optional[str] = None
+):
+    results = search_bookings(BOOKINGS, customer_name=customer_name, status=status)
+    return {
+        "count": len(results),
+        "bookings": results
     }
