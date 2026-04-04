@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from typing import List, Optional
 
+from typing import List, Optional
+from backend.app.services.artisans import filter_artisans, search_artisans_by_rating 
 from backend.app.models.artisan import Artisan, ArtisanCreate
 from backend.app.models.booking import BookingRequest, BookingResponse
 from backend.app.services.artisans import filter_artisans
+from .services.artisans import search_artisans_by_rating
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
@@ -274,3 +276,12 @@ def create_booking(booking: BookingRequest):
     BOOKINGS.append(response)
     return response
     return BOOKINGS
+
+@app.get("/artisans/search/by-rating")
+def search_by_rating(min_rating: float = 4.0):
+    results = search_artisans_by_rating(ARTISANS, min_rating)
+    return {
+        "min_rating": min_rating,
+        "count": len(results),
+        "artisans": results
+    }

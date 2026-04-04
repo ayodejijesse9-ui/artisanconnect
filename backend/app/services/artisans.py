@@ -34,3 +34,9 @@ def filter_artisans(
         results = [a for a in results if a["verified"] is True]
 
     return results
+
+def search_artisans_by_rating(artisans: list, min_rating: float) -> list:
+    """
+    Returns artisans with rating at or above the minimum.
+    """
+    return [a for a in artisans if a.get("rating") and a["rating"] >= min_rating]
