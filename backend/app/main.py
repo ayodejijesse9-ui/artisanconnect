@@ -52,7 +52,7 @@ BOOKINGS = []
 @app.get("/")
 def read_root():
     return {
-        "message": "ArtisanConnect Nigeria API is live",
+      "message": "Welcome to ArtisanConnect Nigeria — Built in Lagos",
         "version": "1.0.0",
         "status": "running"
     }
