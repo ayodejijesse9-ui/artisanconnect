@@ -295,5 +295,14 @@ def search_bookings_endpoint(
     results = search_bookings(BOOKINGS, customer_name=customer_name, status=status)
     return {
         "count": len(results),
-        "bookings": results
+        "bookings": results 
+    }
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "api": "ArtisanConnect Nigeria",
+        "version": "1.0.0",
+        "total_artisans": len(ARTISANS),
+        "total_bookings": len(BOOKINGS)
     }
