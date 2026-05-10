@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from backend.app.models.artisan import Artisan
 
 
@@ -12,16 +12,14 @@ def greet_artisan(name: str, skill: str) -> str:
     return message
 
 
-def filter_artisans(
-    artisans: List[dict],
-    city: Optional[str] = None,
-    skill: Optional[str] = None,
-    verified_only: Optional[bool] = None
-) -> List[dict]:
+def filter_artisans(artisans: List[dict], **kwargs) -> List[dict]:
     """
     Filters a list of artisan dicts by city, skill, and verified status.
     All string comparisons are case-insensitive.
     """
+    city = kwargs.get("city")
+    skill = kwargs.get("skill")
+    verified_only = kwargs.get("verified_only")
     results = artisans
 
     if city:
