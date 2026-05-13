@@ -1,6 +1,15 @@
-class Artisan:
-    def __init__(self, name, skill, city):
+class User:
+    def __init__(self, name, phone):
         self.name = name
+        self.phone = phone
+    
+    def get_contact(self):
+        return f"Name: {self.name} — Phone: {self.phone}"
+
+
+class Artisan(User):
+    def __init__(self, name, phone, skill, city):
+        super().__init__(name, phone)
         self.skill = skill
         self.city = city
         self.verified = False
