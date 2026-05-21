@@ -36,3 +36,4 @@ frontend/pubspec.lock
 # LOGS
 *.log
 logs/
+artisans.json
