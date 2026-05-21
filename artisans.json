@@ -1,0 +1,38 @@
+[
+    {
+        "id": 1,
+        "name": "Emeka Obi",
+        "skill": "Electrician",
+        "city": "Lagos",
+        "verified": true,
+        "rating": 4.8,
+        "jobs_completed": 47
+    },
+    {
+        "id": 2,
+        "name": "Sadiq Musa",
+        "skill": "Plumber",
+        "city": "Abuja",
+        "verified": false,
+        "rating": 4.1,
+        "jobs_completed": 9
+    },
+    {
+        "id": 3,
+        "name": "Chioma Okafor",
+        "skill": "Painter",
+        "city": "Lagos",
+        "verified": true,
+        "rating": 4.6,
+        "jobs_completed": 31
+    },
+    {
+        "id": 4,
+        "name": "Emeka Obi",
+        "skill": "Electrician",
+        "city": "Lagos",
+        "verified": false,
+        "rating": null,
+        "jobs_completed": 0
+    }
+]

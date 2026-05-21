@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from typing import List, Optional
 
+from backend.app.services.data_store import save_data,load_data
 from backend.app.models.artisan import Artisan, ArtisanCreate
 from backend.app.models.booking import BookingRequest, BookingResponse
 from backend.app.models.customer import Customer, CustomerCreate
@@ -125,7 +126,7 @@ def get_artisan(artisan_id: int):
 
 @app.post("/artisans/register", response_model=Artisan, status_code=201)
 def register_artisan(artisan: ArtisanCreate):
-    new_id = max(a["id"] for a in ARTISANS) + 1
+    new_id = max((a["id"] for a in ARTISANS), default=0) +1
     new_artisan = {
         "id": new_id,
         "name": artisan.name,
@@ -136,8 +137,28 @@ def register_artisan(artisan: ArtisanCreate):
         "jobs_completed": artisan.jobs_completed
     }
     ARTISANS.append(new_artisan)
+    save_data("artisans.json", ARTISANS)
     return new_artisan
 
+@app.get("/bookings", response_model=List[BookingResponse])
+def get_bookings():
+    return BOOKINGS
+
+
+@app.get("/bookings/search")
+def search_bookings_endpoint(
+    customer_name: Optional[str] = None,
+    status: Optional[str] = None
+):
+    results = search_bookings(BOOKINGS, customer_name=customer_name, status=status)
+    return {
+        "count": len(results),
+        "bookings": results
+    }
+
+@app.post("/bookings/create", response_model=BookingResponse, status_code=201)
+def create_booking(booking: BookingRequest):
+    global booking_counter
 
 @app.get("/customers", response_model=List[Customer])
 def get_customers():
@@ -156,28 +177,6 @@ def create_customer(customer: CustomerCreate):
     }
     CUSTOMERS.append(new_customer)
     return new_customer
-
-
-@app.get("/bookings", response_model=List[BookingResponse])
-def get_bookings():
-    return BOOKINGS
-
-
-@app.get("/bookings/search")
-def search_bookings_endpoint(
-    customer_name: Optional[str] = None,
-    status: Optional[str] = None
-):
-    results = search_bookings(BOOKINGS, customer_name=customer_name, status=status)
-    return {
-        "count": len(results),
-        "bookings": results
-    }
-
-
-@app.post("/bookings/create", response_model=BookingResponse, status_code=201)
-def create_booking(booking: BookingRequest):
-    global booking_counter
 
     artisan = None
     for a in ARTISANS:
