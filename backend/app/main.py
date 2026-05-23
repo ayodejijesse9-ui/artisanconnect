@@ -14,35 +14,7 @@ app = FastAPI(
 )
 
 # Mock databases
-ARTISANS = [
-    {
-        "id": 1,
-        "name": "Emeka Obi",
-        "skill": "Electrician",
-        "city": "Lagos",
-        "verified": True,
-        "rating": 4.8,
-        "jobs_completed": 47
-    },
-    {
-        "id": 2,
-        "name": "Sadiq Musa",
-        "skill": "Plumber",
-        "city": "Abuja",
-        "verified": False,
-        "rating": 4.1,
-        "jobs_completed": 9
-    },
-    {
-        "id": 3,
-        "name": "Chioma Okafor",
-        "skill": "Painter",
-        "city": "Lagos",
-        "verified": True,
-        "rating": 4.6,
-        "jobs_completed": 31
-    }
-]
+ARTISANS = load_data("artisans.json")
 
 CUSTOMERS = [
     {
@@ -137,7 +109,10 @@ def register_artisan(artisan: ArtisanCreate):
         "jobs_completed": artisan.jobs_completed
     }
     ARTISANS.append(new_artisan)
-    save_data("artisans.json", ARTISANS)
+    try:
+        save_data("artisans.json", ARTISANS)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Artisan data not saved")
     return new_artisan
 
 @app.get("/bookings", response_model=List[BookingResponse])
@@ -209,6 +184,5 @@ def create_customer(customer: CustomerCreate):
         "status": "pending",
         "message": f"Booking confirmed. {artisan['name']} will contact you shortly."
     }
-
     BOOKINGS.append(response)
     return response

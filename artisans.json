@@ -28,9 +28,18 @@
     },
     {
         "id": 4,
-        "name": "Emeka Obi",
-        "skill": "Electrician",
-        "city": "Lagos",
+        "name": "Tunde Adebayo",
+        "skill": "Welder",
+        "city": "Kano",
+        "verified": false,
+        "rating": null,
+        "jobs_completed": 0
+    },
+    {
+        "id": 5,
+        "name": "Tunde Adebayo",
+        "skill": "Welder",
+        "city": "Kano",
         "verified": false,
         "rating": null,
         "jobs_completed": 0
