@@ -131,10 +131,51 @@ def search_bookings_endpoint(
         "bookings": results
     }
 
+
 @app.post("/bookings/create", response_model=BookingResponse, status_code=201)
 def create_booking(booking: BookingRequest):
     global booking_counter
+    try:
+        artisan = None
+        for a in ARTISANS:
+            if a["id"] == booking.artisan_id:
+                artisan = a
+                break
 
+        if not artisan:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Artisan with id {booking.artisan_id} not found"
+            )
+
+        if not artisan["verified"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Artisan {artisan['name']} is not yet verified"
+            )
+
+        booking_counter += 1
+
+        response = {
+            "booking_id": booking_counter,
+            "customer_name": booking.customer_name,
+            "artisan_id": artisan["id"],
+            "artisan_name": artisan["name"],
+            "service_description": booking.service_description,
+            "location": booking.location,
+            "urgent": booking.urgent,
+            "status": "pending",
+            "message": f"Booking confirmed. {artisan['name']} will contact you shortly."
+        }
+
+        BOOKINGS.append(response)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Booking creation failed")
+    
 @app.get("/customers", response_model=List[Customer])
 def get_customers():
     return CUSTOMERS
@@ -152,37 +193,3 @@ def create_customer(customer: CustomerCreate):
     }
     CUSTOMERS.append(new_customer)
     return new_customer
-
-    artisan = None
-    for a in ARTISANS:
-        if a["id"] == booking.artisan_id:
-            artisan = a
-            break
-
-    if not artisan:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Artisan with id {booking.artisan_id} not found"
-        )
-
-    if not artisan["verified"]:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Artisan {artisan['name']} is not yet verified"
-        )
-
-    booking_counter += 1
-
-    response = {
-        "booking_id": booking_counter,
-        "customer_name": booking.customer_name,
-        "artisan_id": artisan["id"],
-        "artisan_name": artisan["name"],
-        "service_description": booking.service_description,
-        "location": booking.location,
-        "urgent": booking.urgent,
-        "status": "pending",
-        "message": f"Booking confirmed. {artisan['name']} will contact you shortly."
-    }
-    BOOKINGS.append(response)
-    return response
