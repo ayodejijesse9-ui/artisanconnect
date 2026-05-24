@@ -15,6 +15,7 @@ app = FastAPI(
 
 # Mock databases
 ARTISANS = load_data("artisans.json")
+verified_names = [a["name"] for a in ARTISANS if a["verified"] == True]
 
 CUSTOMERS = [
     {
@@ -95,6 +96,15 @@ def get_artisan(artisan_id: int):
             return artisan
     raise HTTPException(status_code=404, detail=f"Artisan with id {artisan_id} not found")
 
+@app.get("/artisans/verified/names")
+def get_verified_names():
+    names= [a["name"] for a in ARTISANS if a["verified"] == True]
+    return {
+        
+        "count": len(names) ,
+        "names": names,
+        "verified": True
+    }
 
 @app.post("/artisans/register", response_model=Artisan, status_code=201)
 def register_artisan(artisan: ArtisanCreate):
@@ -193,3 +203,5 @@ def create_customer(customer: CustomerCreate):
     }
     CUSTOMERS.append(new_customer)
     return new_customer
+
+
