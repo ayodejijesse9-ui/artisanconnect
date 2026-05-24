@@ -37,3 +37,4 @@ frontend/pubspec.lock
 *.log
 logs/
 artisans.json
+firebase-credentials.json
