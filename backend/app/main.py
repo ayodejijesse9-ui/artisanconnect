@@ -1,20 +1,24 @@
+# ============================================
+# ArtisanConnect Nigeria — main.py
+# ============================================
+
 from fastapi import FastAPI, HTTPException
 from typing import List, Optional
-
-from backend.app.services.data_store import save_data,load_data
+from backend.app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings
 from backend.app.models.artisan import Artisan, ArtisanCreate
 from backend.app.models.booking import BookingRequest, BookingResponse
 from backend.app.models.customer import Customer, CustomerCreate
-from backend.app.services.artisans import filter_artisans, search_artisans_by_rating, search_bookings
+from backend.app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
+
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
     description="API for connecting verified skilled artisans to customers",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Mock databases
-ARTISANS = load_data("artisans.json")
+ARTISANS = load_artisans()
 verified_names = [a["name"] for a in ARTISANS if a["verified"] == True]
 
 CUSTOMERS = [
@@ -23,24 +27,23 @@ CUSTOMERS = [
         "name": "Dele Giwa",
         "address": "9, folarin road",
         "phone": "09080000000",
-        "city": "Lagos"
+        "city": "Lagos",
     },
-     
     {
         "id": 2,
         "name": "Sheu Shagari",
         "address": "225, Garki road",
         "phone": "09091111111",
-        "city": "Abuja"
+        "city": "Abuja",
     },
     {
         "id": 3,
-       "name": "Buhari Al-ameen",
+        "name": "Buhari Al-ameen",
         "address": "22A, Big Estate",
         "phone": "09071111111",
-        "city": "Lagos"
-    }
-]     
+        "city": "Lagos",
+    },
+]
 
 BOOKINGS = []
 
@@ -53,7 +56,7 @@ def read_root():
     return {
         "message": "ArtisanConnect Nigeria API is live",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
     }
 
 
@@ -65,7 +68,7 @@ def health_check():
         "version": "1.0.0",
         "total_artisans": len(ARTISANS),
         "total_bookings": len(BOOKINGS),
-        "total_customers": len(CUSTOMERS)
+        "total_customers": len(CUSTOMERS),
     }
 
 
@@ -73,20 +76,18 @@ def health_check():
 def get_artisans(
     city: Optional[str] = None,
     skill: Optional[str] = None,
-    verified_only: Optional[bool] = None
+    verified_only: Optional[bool] = None,
 ):
-    results = filter_artisans(ARTISANS, city=city, skill=skill, verified_only=verified_only)
+    results = filter_artisans(
+        ARTISANS, city=city, skill=skill, verified_only=verified_only
+    )
     return results
 
 
 @app.get("/artisans/search/by-rating")
 def search_by_rating(min_rating: float = 4.0):
     results = search_artisans_by_rating(ARTISANS, min_rating)
-    return {
-        "min_rating": min_rating,
-        "count": len(results),
-        "artisans": results
-    }
+    return {"min_rating": min_rating, "count": len(results), "artisans": results}
 
 
 @app.get("/artisans/{artisan_id}", response_model=Artisan)
@@ -94,21 +95,20 @@ def get_artisan(artisan_id: int):
     for artisan in ARTISANS:
         if artisan["id"] == artisan_id:
             return artisan
-    raise HTTPException(status_code=404, detail=f"Artisan with id {artisan_id} not found")
+    raise HTTPException(
+        status_code=404, detail=f"Artisan with id {artisan_id} not found"
+    )
+
 
 @app.get("/artisans/verified/names")
 def get_verified_names():
-    names= [a["name"] for a in ARTISANS if a["verified"] == True]
-    return {
-        
-        "count": len(names) ,
-        "names": names,
-        "verified": True
-    }
+    names = [a["name"] for a in ARTISANS if a["verified"] == True]
+    return {"count": len(names), "names": names, "verified": True}
+
 
 @app.post("/artisans/register", response_model=Artisan, status_code=201)
 def register_artisan(artisan: ArtisanCreate):
-    new_id = max((a["id"] for a in ARTISANS), default=0) +1
+    new_id = max((a["id"] for a in ARTISANS), default=0) + 1
     new_artisan = {
         "id": new_id,
         "name": artisan.name,
@@ -116,14 +116,15 @@ def register_artisan(artisan: ArtisanCreate):
         "city": artisan.city,
         "verified": artisan.verified,
         "rating": artisan.rating,
-        "jobs_completed": artisan.jobs_completed
+        "jobs_completed": artisan.jobs_completed,
     }
     ARTISANS.append(new_artisan)
     try:
-        save_data("artisans.json", ARTISANS)
+        save_artisans(ARTISANS)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Artisan data not saved")
     return new_artisan
+
 
 @app.get("/bookings", response_model=List[BookingResponse])
 def get_bookings():
@@ -135,12 +136,10 @@ def search_bookings_endpoint(
     customer_name: Optional[str] = None,
     status: Optional[str] = None
 ):
-    results = search_bookings(BOOKINGS, customer_name=customer_name, status=status)
+    results = search_bookings(BOOKINGS, customer_name = customer_name, status= status)
     return {
-        "count": len(results),
-        "bookings": results
-    }
-
+        "count": len(results), 
+        "bookings": results}
 
 @app.post("/bookings/create", response_model=BookingResponse, status_code=201)
 def create_booking(booking: BookingRequest):
@@ -155,13 +154,12 @@ def create_booking(booking: BookingRequest):
         if not artisan:
             raise HTTPException(
                 status_code=404,
-                detail=f"Artisan with id {booking.artisan_id} not found"
+                detail=f"Artisan with id {booking.artisan_id} not found",
             )
 
         if not artisan["verified"]:
             raise HTTPException(
-                status_code=400,
-                detail=f"Artisan {artisan['name']} is not yet verified"
+                status_code=400, detail=f"Artisan {artisan['name']} is not yet verified"
             )
 
         booking_counter += 1
@@ -175,7 +173,7 @@ def create_booking(booking: BookingRequest):
             "location": booking.location,
             "urgent": booking.urgent,
             "status": "pending",
-            "message": f"Booking confirmed. {artisan['name']} will contact you shortly."
+            "message": f"Booking confirmed. {artisan['name']} will contact you shortly.",
         }
 
         BOOKINGS.append(response)
@@ -185,7 +183,8 @@ def create_booking(booking: BookingRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Booking creation failed")
-    
+
+
 @app.get("/customers", response_model=List[Customer])
 def get_customers():
     return CUSTOMERS
@@ -199,9 +198,7 @@ def create_customer(customer: CustomerCreate):
         "name": customer.name,
         "phone": customer.phone,
         "address": customer.address,
-        "city": customer.city
+        "city": customer.city,
     }
     CUSTOMERS.append(new_customer)
     return new_customer
-
-

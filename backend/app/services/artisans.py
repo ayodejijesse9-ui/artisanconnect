@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from backend.app.models.artisan import Artisan
 
 
@@ -33,13 +33,15 @@ def filter_artisans(artisans: List[dict], **kwargs) -> List[dict]:
 
     return results
 
+
 def search_artisans_by_rating(artisans: list, min_rating: float) -> list:
     """
     Returns artisans with rating at or above the minimum.
     """
     return [a for a in artisans if a.get("rating") and a["rating"] >= min_rating]
 
-def search_bookings(bookings: list, customer_name: str = None, status: str = None) -> list:
+
+def search_bookings(bookings: list, customer_name: Optional[str] = None, status: Optional[str] = None) -> list:
     """
     Filters bookings by customer name or status.
     Both comparisons are case-insensitive.
@@ -47,7 +49,9 @@ def search_bookings(bookings: list, customer_name: str = None, status: str = Non
     results = bookings
 
     if customer_name:
-        results = [b for b in results if customer_name.lower() in b["customer_name"].lower()]
+        results = [
+            b for b in results if customer_name.lower() in b["customer_name"].lower()
+        ]
 
     if status:
         results = [b for b in results if b["status"].lower() == status.lower()]
