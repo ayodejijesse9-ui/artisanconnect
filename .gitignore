@@ -39,3 +39,4 @@ logs/
 artisans.json
 firebase-credentials.json
 firebase-credentials.json
+.env
