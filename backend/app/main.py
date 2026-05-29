@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI, HTTPException
 from typing import List, Optional
-from backend.app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings
+from backend.app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
 from backend.app.models.artisan import Artisan, ArtisanCreate
 from backend.app.models.booking import BookingRequest, BookingResponse
 from backend.app.models.customer import Customer, CustomerCreate
@@ -21,31 +21,9 @@ app = FastAPI(
 ARTISANS = load_artisans()
 verified_names = [a["name"] for a in ARTISANS if a["verified"] == True]
 
-CUSTOMERS = [
-    {
-        "id": 1,
-        "name": "Dele Giwa",
-        "address": "9, folarin road",
-        "phone": "09080000000",
-        "city": "Lagos",
-    },
-    {
-        "id": 2,
-        "name": "Sheu Shagari",
-        "address": "225, Garki road",
-        "phone": "09091111111",
-        "city": "Abuja",
-    },
-    {
-        "id": 3,
-        "name": "Buhari Al-ameen",
-        "address": "22A, Big Estate",
-        "phone": "09071111111",
-        "city": "Lagos",
-    },
-]
+CUSTOMERS = load_customers()
 
-BOOKINGS = []
+BOOKINGS = load_bookings()
 
 # Unique booking ID counter
 booking_counter = 0
@@ -159,7 +137,8 @@ def create_booking(booking: BookingRequest):
 
         if not artisan["verified"]:
             raise HTTPException(
-                status_code=400, detail=f"Artisan {artisan['name']} is not yet verified"
+                status_code=400,
+                detail=f"Artisan {artisan['name']} is not yet verified"
             )
 
         booking_counter += 1
@@ -177,6 +156,7 @@ def create_booking(booking: BookingRequest):
         }
 
         BOOKINGS.append(response)
+        save_bookings(BOOKINGS)
         return response
 
     except HTTPException:
@@ -201,4 +181,8 @@ def create_customer(customer: CustomerCreate):
         "city": customer.city,
     }
     CUSTOMERS.append(new_customer)
+    try:
+        save_customers(CUSTOMERS)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Customer data not saved")
     return new_customer
