@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize Firebase
-cred_path = os.getenv("FIREBASE_CREDENTIALS")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+cred_path = os.path.join(BASE_DIR, "firebase-credentials.json")
 cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 
@@ -71,3 +72,31 @@ def save_customers(data: list) -> None:
             db.collection("customers").document(doc_id).set(customer)
     except Exception as e:
         print(f"Error saving customers: {e}")
+
+def load_users() -> list:
+    try:
+        docs = db.collection("users").stream()
+        return [doc.to_dict() for doc in docs]
+    except Exception as e:
+        print(f"Error loading users: {e}")
+        return []
+
+
+def save_user(data: dict) -> None:
+    """Saves a single user to Firestore."""
+    try:
+        doc_id = str(data["id"])
+        db.collection("users").document(doc_id).set(data)
+    except Exception as e:
+        print(f"Error saving user: {e}")
+
+def load_user_by_email(email: str) -> dict | None:
+    try:
+        docs = db.collection("users").where("email", "==", email).stream()
+        for doc in docs:
+            return doc.to_dict()
+        return None
+    except Exception as e:
+        print(f"Error loading user by email: {e}")
+        return None
+        

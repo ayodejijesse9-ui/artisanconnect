@@ -1,5 +1,5 @@
 from typing import List, Optional
-from backend.app.models.artisan import Artisan
+from app.models.artisan import Artisan
 
 
 def greet_artisan(name: str, skill: str) -> str:

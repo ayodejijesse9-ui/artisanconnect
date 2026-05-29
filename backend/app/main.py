@@ -4,18 +4,20 @@
 
 from fastapi import FastAPI, HTTPException
 from typing import List, Optional
-from backend.app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
-from backend.app.models.artisan import Artisan, ArtisanCreate
-from backend.app.models.booking import BookingRequest, BookingResponse
-from backend.app.models.customer import Customer, CustomerCreate
-from backend.app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
-
+from app.models.artisan import Artisan, ArtisanCreate
+from app.models.booking import BookingRequest, BookingResponse
+from app.models.customer import Customer, CustomerCreate
+from app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
+from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
+from app.routes.auth_routes import router as auth_router
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
     description="API for connecting verified skilled artisans to customers",
     version="1.0.0",
 )
+
+app.include_router(auth_router)
 
 # Mock databases
 ARTISANS = load_artisans()
