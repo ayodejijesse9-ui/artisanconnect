@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr, Field
-from fastapi import APIRouter, HTTPException
-from app.auth import hash_password, verify_password, create_access_token
+from fastapi import APIRouter, HTTPException, Header, Depends
+from app.auth import hash_password, verify_password, create_access_token,verify_token
 from app.services.data_store import load_user_by_email, load_users, save_user
-from app.auth import create_access_token, verify_password
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
@@ -46,3 +46,23 @@ def auth_login(user:UserLogin):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_access_token({"sub": existing_user["email"], "role": existing_user["role"]})
     return {"access_token": token, "token_type": "bearer"}
+
+def get_current_user(authorization: str = Header(None)):
+    try:
+        if not authorization:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
+        token = authorization.split(" ")[1]
+        payload = verify_token(token)
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = load_user_by_email(email)
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        return {"email": user["email"], "role": user["role"]}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@router.get("/current-user")
+def current_user_route(current_user: dict = Depends(get_current_user)):
+    return current_user
