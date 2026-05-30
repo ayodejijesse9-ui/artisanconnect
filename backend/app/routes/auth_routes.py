@@ -1,7 +1,15 @@
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr, Field
 from fastapi import APIRouter, HTTPException
-from app.auth import hash_password
+from app.auth import hash_password, verify_password, create_access_token
 from app.services.data_store import load_user_by_email, load_users, save_user
+from app.auth import create_access_token, verify_password
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -28,3 +36,13 @@ def auth_register(user: UserRegister):
     }
     save_user(new_user)
     return {"message": "User registered successfully"}
+
+@router.post("/login")
+def auth_login(user:UserLogin):
+    existing_user = load_user_by_email(user.email)
+    if not existing_user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not verify_password(user.password, existing_user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token({"sub": existing_user["email"], "role": existing_user["role"]})
+    return {"access_token": token, "token_type": "bearer"}

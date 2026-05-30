@@ -5,8 +5,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # --- Config ---
-load_dotenv()
-SECRET_KEY = os.getenv("JWS_SECRET_KEY")
+load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
