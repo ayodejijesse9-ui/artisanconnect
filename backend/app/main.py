@@ -2,7 +2,7 @@
 # ArtisanConnect Nigeria — main.py
 # ============================================
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Depends
 from typing import List, Optional
 from app.models.artisan import Artisan, ArtisanCreate
 from app.models.booking import BookingRequest, BookingResponse
@@ -10,6 +10,7 @@ from app.models.customer import Customer, CustomerCreate
 from app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
 from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
 from app.routes.auth_routes import router as auth_router
+from app.routes.auth_routes import get_current_user
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
@@ -87,7 +88,7 @@ def get_verified_names():
 
 
 @app.post("/artisans/register", response_model=Artisan, status_code=201)
-def register_artisan(artisan: ArtisanCreate):
+def register_artisan(artisan: ArtisanCreate, current_user: dict = Depends(get_current_user)):
     new_id = max((a["id"] for a in ARTISANS), default=0) + 1
     new_artisan = {
         "id": new_id,
@@ -114,7 +115,8 @@ def get_bookings():
 @app.get("/bookings/search")
 def search_bookings_endpoint(
     customer_name: Optional[str] = None,
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     results = search_bookings(BOOKINGS, customer_name = customer_name, status= status)
     return {
@@ -122,7 +124,7 @@ def search_bookings_endpoint(
         "bookings": results}
 
 @app.post("/bookings/create", response_model=BookingResponse, status_code=201)
-def create_booking(booking: BookingRequest):
+def create_booking(booking: BookingRequest, current_user: dict = Depends(get_current_user)):
     global booking_counter
     try:
         artisan = None
@@ -173,7 +175,7 @@ def get_customers():
 
 
 @app.post("/customers/create", response_model=Customer, status_code=201)
-def create_customer(customer: CustomerCreate):
+def create_customer(customer: CustomerCreate, current_user: dict = Depends(get_current_user)):
     new_id = len(CUSTOMERS) + 1
     new_customer = {
         "id": new_id,
