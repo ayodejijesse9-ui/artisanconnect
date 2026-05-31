@@ -3,10 +3,21 @@ from typing import Optional
 
 
 class BookingRequest(BaseModel):
-    customer_name: str = Field(min_length=2, max_length=50)
+    customer_name: str = Field(
+        min_length=2, 
+        max_length=50
+        )
     artisan_id: int
-    service_description: str = Field(min_length=5)
-    location: str = Field(min_length=2)
+    service_description: str = Field(
+        min_length=5, 
+        max_length=200,
+        pattern="^[a-zA-Z0-9 .,'-]+$"
+        )
+    location: str = Field(
+        min_length=2,
+        max_length=100,
+        pattern="^[a-zA-Z0-9 .,'-]+$"
+    )
     urgent: bool = False
 
 
