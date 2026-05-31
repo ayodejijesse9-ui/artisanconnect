@@ -2,8 +2,12 @@
 # ArtisanConnect Nigeria — main.py
 # ============================================
 
-from fastapi import FastAPI, HTTPException,Depends
+from fastapi import FastAPI, HTTPException,Depends,Request
 from typing import List, Optional
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
 from app.models.artisan import Artisan, ArtisanCreate
 from app.models.booking import BookingRequest, BookingResponse
 from app.models.customer import Customer, CustomerCreate
@@ -11,14 +15,24 @@ from app.services.artisans import search_artisans_by_rating, filter_artisans, se
 from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
 from app.routes.auth_routes import router as auth_router
 from app.routes.auth_routes import get_current_user
+from app.limiter import limiter
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
     description="API for connecting verified skilled artisans to customers",
     version="1.0.0",
 )
-
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(auth_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://artisanconnect.ng"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
 
 # Mock databases
 ARTISANS = load_artisans()
@@ -54,7 +68,9 @@ def health_check():
 
 
 @app.get("/artisans", response_model=List[Artisan])
+@limiter.limit("30/minute")
 def get_artisans(
+    request: Request,
     city: Optional[str] = None,
     skill: Optional[str] = None,
     verified_only: Optional[bool] = None,
@@ -124,7 +140,8 @@ def search_bookings_endpoint(
         "bookings": results}
 
 @app.post("/bookings/create", response_model=BookingResponse, status_code=201)
-def create_booking(booking: BookingRequest, current_user: dict = Depends(get_current_user)):
+@limiter.limit("10/minute")
+def create_booking(booking: BookingRequest, request: Request, current_user: dict = Depends(get_current_user)):
     global booking_counter
     try:
         artisan = None

@@ -1,10 +1,13 @@
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr, Field
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Header, Depends, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.auth import hash_password, verify_password, create_access_token,verify_token
 from app.services.data_store import load_user_by_email, load_users, save_user
-
+from app.limiter import limiter
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
@@ -20,10 +23,12 @@ class UserRegister(BaseModel):
     password: str = Field(min_length=8)
     role: str = Field(..., pattern="^(customer|artisan)$")
 
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register")
-def auth_register(user: UserRegister):
+@router.post("/register")           
+@limiter.limit("5/minute")
+def auth_register(request: Request, user: UserRegister):
     existing_user = load_user_by_email(user.email)
     if existing_user:
         raise HTTPException(status_code=409, detail="User with this email already exists")
@@ -38,7 +43,8 @@ def auth_register(user: UserRegister):
     return {"message": "User registered successfully"}
 
 @router.post("/login")
-def auth_login(user:UserLogin):
+@limiter.limit("5/minute")
+def auth_login(request: Request, user: UserLogin):
     existing_user = load_user_by_email(user.email)
     if not existing_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
