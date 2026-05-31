@@ -8,6 +8,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes.auth_routes import get_current_user, require_role
 from app.models.artisan import Artisan, ArtisanCreate
 from app.models.booking import BookingRequest, BookingResponse
 from app.models.customer import Customer, CustomerCreate
@@ -104,7 +105,7 @@ def get_verified_names():
 
 
 @app.post("/artisans/register", response_model=Artisan, status_code=201)
-def register_artisan(artisan: ArtisanCreate, current_user: dict = Depends(get_current_user)):
+def register_artisan(artisan: ArtisanCreate, current_user: dict = Depends(require_role("artisan"))):
     new_id = max((a["id"] for a in ARTISANS), default=0) + 1
     new_artisan = {
         "id": new_id,
@@ -141,7 +142,7 @@ def search_bookings_endpoint(
 
 @app.post("/bookings/create", response_model=BookingResponse, status_code=201)
 @limiter.limit("10/minute")
-def create_booking(booking: BookingRequest, request: Request, current_user: dict = Depends(get_current_user)):
+def create_booking(booking: BookingRequest, request: Request, current_user: dict = Depends(require_role("customer"))):
     global booking_counter
     try:
         artisan = None
@@ -192,7 +193,7 @@ def get_customers():
 
 
 @app.post("/customers/create", response_model=Customer, status_code=201)
-def create_customer(customer: CustomerCreate, current_user: dict = Depends(get_current_user)):
+def create_customer(customer: CustomerCreate, current_user: dict = Depends(require_role("customer"))):
     new_id = len(CUSTOMERS) + 1
     new_customer = {
         "id": new_id,

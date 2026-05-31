@@ -72,3 +72,10 @@ def get_current_user(authorization: str = Header(None)):
 @router.get("/current-user")
 def current_user_route(current_user: dict = Depends(get_current_user)):
     return current_user
+
+def require_role(role: str):
+    def check_role(current_user: dict = Depends(get_current_user)):
+        if current_user["role"] != role:
+            raise HTTPException(status_code=403, detail="Access forbidden")
+        return current_user
+    return check_role
