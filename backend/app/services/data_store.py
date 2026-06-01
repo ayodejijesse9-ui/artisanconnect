@@ -100,3 +100,14 @@ def load_user_by_email(email: str) -> dict | None:
         print(f"Error loading user by email: {e}")
         return None
         
+def update_user_password(email: str, new_password: str) -> dict | None:
+    try:
+        docs = db.collection("users").where("email", "==", email).stream()
+        for doc in docs:
+            doc_id = doc.id
+            db.collection("users").document(doc_id).update({"password": new_password})
+            return doc.to_dict()
+        return None
+    except Exception as e:
+        print(f"Error updating user password: {e}")
+        return None

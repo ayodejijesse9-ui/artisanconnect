@@ -32,3 +32,31 @@ def verify_token(token: str) -> dict:
         return payload
     except JWTError:
         return None
+    
+def create_reset_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire, "type": "password_reset"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+def verify_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+    
+def verify_reset_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "password_reset":
+            return None
+        return payload.get("sub")
+    except JWTError:
+        return None
