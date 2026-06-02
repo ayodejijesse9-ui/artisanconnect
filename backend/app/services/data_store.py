@@ -2,6 +2,7 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -111,3 +112,15 @@ def update_user_password(email: str, new_password: str) -> dict | None:
     except Exception as e:
         print(f"Error updating user password: {e}")
         return None
+    
+def update_artisan_verified(artisan_id: int) -> bool:
+    try:
+        docs = db.collection("artisans").where("id", "==", artisan_id).stream()
+        for doc in docs:
+            db.collection("artisans").document(doc.id).update({"verified": True})
+            return True
+        return False
+    except Exception as e:
+        print(f"Error updating artisan verification: {e}")
+        return False
+    

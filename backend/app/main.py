@@ -9,14 +9,17 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.auth_routes import get_current_user, require_role
-from app.models.artisan import Artisan, ArtisanCreate
+from app.models.artisan import Artisan, ArtisanCreate, NINVerifyRequest
 from app.models.booking import BookingRequest, BookingResponse
 from app.models.customer import Customer, CustomerCreate
 from app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
-from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers
+from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers, update_artisan_verified
 from app.routes.auth_routes import router as auth_router
 from app.routes.auth_routes import get_current_user
 from app.limiter import limiter
+from app.nin_verify import verify_nin
+from app.models import customer
+
 
 app = FastAPI(
     title="ArtisanConnect Nigeria",
@@ -112,7 +115,7 @@ def register_artisan(artisan: ArtisanCreate, current_user: dict = Depends(requir
         "name": artisan.name,
         "skill": artisan.skill,
         "city": artisan.city,
-        "verified": artisan.verified,
+        "verified": False,
         "rating": artisan.rating,
         "jobs_completed": artisan.jobs_completed,
     }
@@ -208,3 +211,14 @@ def create_customer(customer: CustomerCreate, current_user: dict = Depends(requi
     except Exception as e:
         raise HTTPException(status_code=500, detail="Customer data not saved")
     return new_customer
+
+
+
+@app.post("/artisans/verify-nin")
+def verify_artisan_nin(data: NINVerifyRequest, current_user: dict = Depends(require_role("artisan"))):
+    if not verify_nin(data.nin):
+        raise HTTPException(status_code=400, detail="Invalid NIN or verification failed")
+    updated = update_artisan_verified(data.artisan_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Artisan not found")
+    return {"message": "NIN verified successfully", "artisan_id": data.artisan_id}

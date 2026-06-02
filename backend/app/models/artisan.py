@@ -29,6 +29,9 @@ class ArtisanCreate(BaseModel):
         max_length=20,
         pattern=r'^[a-zA-Z\s]+$'
     )
-    verified: bool = False
     rating: Optional[float] = Field(default=None, ge=0.0, le=5.0)
     jobs_completed: Optional[int] = Field(default=0, ge=0)
+
+class NINVerifyRequest(BaseModel):
+    artisan_id: int
+    nin: str = Field(min_length=11, max_length=11)
