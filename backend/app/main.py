@@ -4,21 +4,24 @@
 
 from fastapi import FastAPI, HTTPException,Depends,Request
 from typing import List, Optional
+from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.auth_routes import get_current_user, require_role
+from app.ai_match import extract_job_details, match_artisans
+from app.routes.auth_routes import get_current_user, require_role, router as auth_router
 from app.models.artisan import Artisan, ArtisanCreate, NINVerifyRequest
 from app.models.booking import BookingRequest, BookingResponse
 from app.models.customer import Customer, CustomerCreate
 from app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
 from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers, update_artisan_verified
-from app.routes.auth_routes import router as auth_router
 from app.routes.auth_routes import get_current_user
 from app.limiter import limiter
 from app.nin_verify import verify_nin
-from app.models import customer
+
+class MatchRequest(BaseModel):
+    job_description: str
 
 
 app = FastAPI(
@@ -222,3 +225,13 @@ def verify_artisan_nin(data: NINVerifyRequest, current_user: dict = Depends(requ
     if not updated:
         raise HTTPException(status_code=404, detail="Artisan not found")
     return {"message": "NIN verified successfully", "artisan_id": data.artisan_id}
+
+@app.post("/artisans/match")
+def match_artisans_endpoint(data: MatchRequest):
+    job_details = extract_job_details(data.job_description)
+    matches = match_artisans(job_details, ARTISANS)
+    return {
+        "job_details": job_details,
+        "matches": matches,
+        "count": len(matches)
+    }
