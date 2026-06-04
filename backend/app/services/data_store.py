@@ -124,3 +124,13 @@ def update_artisan_verified(artisan_id: int) -> bool:
         print(f"Error updating artisan verification: {e}")
         return False
     
+def update_booking_status(booking_id: int, status: str) -> bool:
+    try:
+        docs = db.collection("bookings").where("booking_id", "==", booking_id).stream()
+        for doc in docs:
+            db.collection("bookings").document(doc.id).update({"status": status})
+            return True
+        return False
+    except Exception as e:
+        print(f"Error updating booking status: {e}")
+        return False

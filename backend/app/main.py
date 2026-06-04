@@ -15,7 +15,7 @@ from app.models.artisan import Artisan, ArtisanCreate, NINVerifyRequest
 from app.models.booking import BookingRequest, BookingResponse
 from app.models.customer import Customer, CustomerCreate
 from app.services.artisans import search_artisans_by_rating, filter_artisans, search_bookings
-from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers, update_artisan_verified
+from app.services.data_store import save_artisans, load_artisans, save_bookings, load_bookings, save_customers, load_customers, update_artisan_verified, update_booking_status
 from app.routes.auth_routes import get_current_user
 from app.limiter import limiter
 from app.nin_verify import verify_nin
@@ -47,9 +47,7 @@ verified_names = [a["name"] for a in ARTISANS if a["verified"] == True]
 
 CUSTOMERS = load_customers()
 
-BOOKINGS = load_bookings()
 
-# Unique booking ID counter
 booking_counter = 0
 
 
@@ -69,7 +67,7 @@ def health_check():
         "api": "ArtisanConnect Nigeria",
         "version": "1.0.0",
         "total_artisans": len(ARTISANS),
-        "total_bookings": len(BOOKINGS),
+        "total_bookings": len(load_bookings()),
         "total_customers": len(CUSTOMERS),
     }
 
@@ -132,7 +130,7 @@ def register_artisan(artisan: ArtisanCreate, current_user: dict = Depends(requir
 
 @app.get("/bookings", response_model=List[BookingResponse])
 def get_bookings():
-    return BOOKINGS
+    return load_bookings()
 
 
 @app.get("/bookings/search")
@@ -141,7 +139,7 @@ def search_bookings_endpoint(
     status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    results = search_bookings(BOOKINGS, customer_name = customer_name, status= status)
+    results = search_bookings(load_bookings(), customer_name = customer_name, status= status)
     return {
         "count": len(results), 
         "bookings": results}
@@ -179,12 +177,13 @@ def create_booking(booking: BookingRequest, request: Request, current_user: dict
             "service_description": booking.service_description,
             "location": booking.location,
             "urgent": booking.urgent,
-            "status": "pending",
+            "status": "requested",
             "message": f"Booking confirmed. {artisan['name']} will contact you shortly.",
         }
 
-        BOOKINGS.append(response)
-        save_bookings(BOOKINGS)
+        bookings = load_bookings()
+        bookings.append(response)
+        save_bookings(bookings)
         return response
 
     except HTTPException:
@@ -235,3 +234,17 @@ def match_artisans_endpoint(data: MatchRequest):
         "matches": matches,
         "count": len(matches)
     }
+
+@app.post("/bookings/{booking_id}/accept")
+def accept_booking(booking_id: int, current_user: dict = Depends(require_role("artisan"))):
+    updated = update_booking_status(booking_id, "confirmed")
+    if not updated:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"message": "Booking accepted", "booking_id": booking_id}
+
+@app.post("/bookings/{booking_id}/reject")
+def reject_booking(booking_id: int, current_user: dict = Depends(require_role("artisan"))):
+    updated = update_booking_status(booking_id, "rejected")
+    if not updated:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"message": "Booking rejected", "booking_id": booking_id}
