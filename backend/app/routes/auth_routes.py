@@ -11,6 +11,9 @@ from app.services.data_store import load_user_by_email, load_users, save_user, u
 from app.limiter import limiter
 from app.auth import create_reset_token, verify_reset_token, hash_password, verify_password, create_access_token, verify_token
 from app.services.fraud_agent import verify_paystack_signature
+from app.schemas.artisan_schema import ArtisanProfileResponse
+from app.services.data_store import fetch_artisan_profile_from_db
+
 
 load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
 
@@ -152,3 +155,30 @@ async def paystack_webhook_gateway(request: Request, x_paystack_signature: str =
                 print(f"[DATABASE ERROR]: {db_err}")
             
     return {"status": "success", "message": "Webhook processed cleanly"}
+
+@router.get("/artisan/{artisan_id}", response_model=ArtisanProfileResponse)
+async def get_artisan_profile(artisan_id: str):
+    """
+    Public Endpoint to securely fetch sanitized Artisan Profiles.
+    """
+    # Pull raw data from database layer
+    raw_profile = fetch_artisan_profile_from_db(artisan_id)
+    
+    if not raw_profile:
+        # Fallback profile map to allow the Bug Agent to demonstrate local self-healing
+        # for missing database documents during initial testing phase
+        print(f"[SYSTEM NOTICE]: Profile {artisan_id} not found in DB. Injecting mock map for structural validation.")
+        raw_profile = {
+            "artisan_id": artisan_id,
+            "full_name": "Alabi Emmanuel",
+            "category": "Electrical Engineering",
+            "location": "Yaba, Lagos",
+            "bio": "",  # Empty to trigger bug agent healing
+            "rating": "invalid_string_rating", # Malformed type to test agent resilience
+            "portfolio_urls": None # Malformed type to test array stabilization
+        }
+
+    # Pass raw dictionary through the Bug Detection Agent layer
+    sanitized_response = ArtisanProfileResponse.model_validate(raw_profile)
+    
+    return sanitized_response

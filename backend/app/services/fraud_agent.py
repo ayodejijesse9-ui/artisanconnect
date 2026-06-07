@@ -4,7 +4,10 @@
 
 import os
 import hmac
+import json
 import hashlib
+from app.services.ai_engine import call_ai_agent
+
 
 def verify_paystack_signature(raw_payload_bytes: bytes, incoming_signature: str) -> bool:
     """
@@ -29,3 +32,22 @@ def verify_paystack_signature(raw_payload_bytes: bytes, incoming_signature: str)
         
     print("[FRAUD WARNING]: Unauthorized signature mismatch intercepted by security layer.")
     return False
+
+
+def analyze_transaction_behavior(payload_dict: dict) -> bool:
+    """
+    AI Fraud Extension: Analyzes payload parameters for systemic risk behavior.
+    """
+    system_instruction = (
+        "You are the ArtisanConnect Financial Risk Agent. Analyze the following metadata payload "
+        "for payment transaction fraud or extreme manipulation (e.g., suspicious pricing scale or spoofed metadata values). "
+        "Respond with exactly one word: 'SAFE' or 'SUSPICIOUS'. No commentary."
+    )
+    
+    user_payload = json.dumps(payload_dict)
+    assessment = call_ai_agent(system_instruction, user_payload, temperature=0.1)
+    
+    if "SUSPICIOUS" in assessment.upper():
+        print("[AI FRAUD WARNING]: Transaction pattern flagged as an anomaly by semantic analysis.")
+        return False
+    return True
