@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr, Field
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
+from app.services.ai_support_agent import generate_transaction_email, generate_fraud_alert_email
 from app.email import send_password_reset_email 
 from app.services.data_store import load_user_by_email, load_users, save_user, update_user_password, update_booking_status
 from app.limiter import limiter
@@ -13,11 +14,19 @@ from app.auth import create_reset_token, verify_reset_token, hash_password, veri
 from app.services.fraud_agent import verify_paystack_signature
 from app.schemas.artisan_schema import ArtisanProfileResponse
 from app.services.data_store import fetch_artisan_profile_from_db
+from app.services.ai_engine import call_ai_agent
+from app.services.pattern_brain import analyze_patterns, record_system_event
+from app.services.agent_registry import get_agent_registry
 
 
 load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+class DynamicChatRequest(BaseModel):
+    target_agent: str  # Options: 'all' or specific names like 'support', 'security', 'optimizer'
+    message: str
+class GroupChatRequest(BaseModel):
+    message: str
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -182,3 +191,53 @@ async def get_artisan_profile(artisan_id: str):
     sanitized_response = ArtisanProfileResponse.model_validate(raw_profile)
     
     return sanitized_response
+
+
+
+from fastapi import Header, HTTPException, Depends
+
+# A quick, secure token for your local MacBook testing environment
+DEVELOPER_SANDBOX_TOKEN = "jesse_dev_secret_2026"
+
+def verify_developer_access(x_developer_secret: str = Header(None)):
+    """
+    Security Dependency: Wall off experimental multi-agent sandboxes from public clients.
+    """
+    if x_developer_secret != DEVELOPER_SANDBOX_TOKEN:
+        raise HTTPException(
+            status_code=403, 
+            detail="Access Denied: This endpoint is restricted to administrative internal developer scopes."
+        )
+    return x_developer_secret
+
+# Attach the Depends lock to your route
+@router.post("/test/agent-chat-dispatch")
+def dynamic_agent_dispatcher(request: DynamicChatRequest, dev_token: str = Depends(verify_developer_access)):
+    """
+    Unified AI Hub: Invisible to regular clients. Requires a secure developer handshake header.
+    """
+    user_message = request.message
+    target = request.target_agent.lower().strip()
+    
+    current_patterns = analyze_patterns()
+    registry = get_agent_registry(current_patterns)
+    room_responses = {}
+    
+    if target == "all":
+        for _, config in registry.items():
+            name = config["display_name"]
+            room_responses[name] = call_ai_agent(config["instruction"], user_payload=user_message, temperature=0.6)
+            
+    elif target in registry:
+        name = registry[target]["display_name"]
+        room_responses[name] = call_ai_agent(registry[target]["instruction"], user_payload=user_message, temperature=0.6)
+        
+    else:
+        valid_targets = ["all"] + list(registry.keys())
+        return {"error": f"Target '{request.target_agent}' not recognized."}
+        
+    return {
+        "dispatch_mode": "BROADCAST_ALL" if target == "all" else f"SINGLE_AGENT_{target.upper()}",
+        "recognized_patterns": current_patterns,
+        "responses": room_responses
+    }
