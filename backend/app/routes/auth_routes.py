@@ -6,7 +6,6 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr, Field
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
-from app.services.ai_support_agent import generate_transaction_email, generate_fraud_alert_email
 from app.email import send_password_reset_email 
 from app.services.data_store import load_user_by_email, load_users, save_user, update_user_password, update_booking_status
 from app.limiter import limiter
@@ -17,6 +16,7 @@ from app.services.data_store import fetch_artisan_profile_from_db
 from app.services.ai_engine import call_ai_agent
 from app.services.pattern_brain import analyze_patterns, record_system_event
 from app.services.agent_registry import get_agent_registry
+from app.services.ai_support_agent import triage_and_draft_support_email, SupportDraftSchema
 
 
 load_dotenv("/Users/JESSE/Desktop/artisanconnect/.env")
@@ -43,6 +43,11 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str = Field(min_length=8, max_length=100)
+
+class IncomingTicketRequest(BaseModel):
+    customer_email: str
+    customer_name: str
+    complaint: str
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -241,3 +246,16 @@ def dynamic_agent_dispatcher(request: DynamicChatRequest, dev_token: str = Depen
         "recognized_patterns": current_patterns,
         "responses": room_responses
     }
+
+@router.post("/support/triage-ticket", response_model=SupportDraftSchema)
+def incoming_support_ticket_triage(payload: IncomingTicketRequest):
+    """
+    Module 21 Ticket Processor: Ingests unstructured customer complaints, 
+    categorizes ticket risk variables, and outputs fully drafted email schemas.
+    """
+    draft_object = triage_and_draft_support_email(
+        customer_email=payload.customer_email,
+        customer_name=payload.customer_name,
+        raw_complaint=payload.complaint
+    )
+    return draft_object

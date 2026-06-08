@@ -30,7 +30,7 @@ def call_ai_agent(system_instruction: str, user_payload: str, temperature: float
                 {"role": "user", "content": user_payload}
             ],
             temperature=temperature,
-            max_tokens=150
+            max_tokens=400
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
